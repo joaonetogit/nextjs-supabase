@@ -15,6 +15,8 @@ import {
   FormMessage,
 } from '@/components/ui/Form';
 import { Input } from '@/components/ui/Input';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   email: z
@@ -39,6 +41,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function LoginAccountForm() {
+  const router = useRouter();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,8 +50,23 @@ export default function LoginAccountForm() {
     },
   });
 
-  function onSubmit(values: FormValues) {
-    console.log(values);
+  async function onSubmit(values: FormValues) {
+    try {
+      const supabase = createClientComponentClient();
+      const { email, password } = values;
+
+      const {
+        data: { session },
+      } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (session) {
+        console.log('Login Account on submit', session);
+        form.reset();
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Login Account on submit', error);
+    }
   }
 
   return (
@@ -83,7 +101,7 @@ export default function LoginAccountForm() {
               </FormItem>
             )}
           />
-          <Button onClick={() => onSubmit}>Login Account</Button>
+          <Button type="submit">Login Account</Button>
         </form>
       </Form>
     </div>

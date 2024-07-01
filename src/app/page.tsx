@@ -2,10 +2,26 @@ import CreateAccountForm from '@/components/custom/auth/CreateAccountForm';
 import LoginAccountForm from '@/components/custom/auth/LoginAccountForm';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import useHome from '@/hooks/useHome';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { RedirectType, redirect } from 'next/navigation';
 
-export default function Home() {
-  useHome();
+export default async function Home() {
+  let loggedIn = false;
+
+  try {
+    const supabase = createServerComponentClient({ cookies });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) loggedIn = true;
+  } catch (error) {
+    console.error('Error fetching user session:', error);
+  } finally {
+    if (loggedIn) redirect('/user-app', RedirectType.replace);
+  }
+
   return (
     <div>
       <h1>Home</h1>
@@ -22,7 +38,7 @@ export default function Home() {
           <TabsContent value="create-account">
             <CreateAccountForm />
           </TabsContent>
-          <TabsContent value="login" >
+          <TabsContent value="login">
             <LoginAccountForm />
           </TabsContent>
         </Tabs>
